@@ -1,0 +1,110 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    exit 84
+fi
+
+config_file="$1"
+
+if [ ! -s "$config_file" ]; then
+    exit 84
+fi
+
+src=""
+binary=""
+cc=""
+cflags=""
+bck_dir=""
+zip=""
+zip_flags=""
+unzip=""
+unzip_flags=""
+num=""
+config_dir=$(dirname "$config_file")
+
+while IFS=';' read -r key value || [[ -n "$key" && -n "$value" ]]; do
+    case $key in
+    *.c)
+        if [ ! -s "$config_dir/$key" ]; then
+            exit 84
+        fi
+        src+=" $(echo "$key" | tr -d ' ')"
+    ;;
+        EXEC) binary="$value";;
+        CC) cc="$value";;
+        CFLAGS) cflags="$value";;
+        BCK_DIR) bck_dir="$value";;
+        ZIP) zip="$value";;
+        ZIPFLAGS) zip_flags="$value";;
+        UNZIP) unzip="$value";;
+        UNZIPFLAGS) unzip_flags="$value";;
+        NUM) num="$value";;
+    esac
+done < "$config_file"
+
+src=$(echo "$src" | tr -s ' ')
+binary=$(echo "$binary" | tr -d ' ')
+cc=$(echo "$cc" | tr -d ' ')
+bck_dir=$(echo "$bck_dir" | tr -d ' ')
+zip=$(echo "$zip" | tr -d ' ')
+zip_flags=$(echo "$zip_flags" | tr -d ' ')
+unzip=$(echo "$unzip" | tr -d ' ')
+unzip_flags=$(echo "$unzip_flags" | tr -d ' ')
+
+input=$(printf "
+##
+## EPITECH PROJECT, 2023
+## emacs Makefile
+## File description:
+## Makefile
+##
+
+SRC    =   $src
+
+OBJ    =   \$(SRC:.c=.o)
+
+NAME    =   $binary
+
+all    :   \$(NAME)
+
+CC    =   $cc
+
+CFLAGS    =   $cflags
+
+BCK_DIR    =   $bck_dir
+
+ZIP    =   $zip
+
+ZIPFLAGS    =   $zip_flags
+
+UNZIP    =   $unzip
+
+UNZIPFLAGS    =   $unzip_flags
+
+\$(NAME):    \$(OBJ)
+\t\$(CC) -o \$(NAME) \$(OBJ) \$(CFLAGS)
+
+num:
+\t@echo \"Version: 0.4.2\"
+
+archive:
+\t@mkdir -p \$(BCK_DIR)
+\t@\$(ZIP) \$(ZIPFLAGS) \$(BCK_DIR)/\$(NAME)_backup_$(version).zip \$(SRC)
+
+revert:
+\t@\$(UNZIP) \$(UNZIPFLAGS) \$(BCK_DIR)/\$(NAME)_backup_$(version).zip
+
+delete:
+\t@@rm -f \$(BCK_DIR)/\$(NAME)_backup_$(version).zip
+
+
+clean:
+\t\$(RM) \$(OBJ)
+
+fclean: clean
+\t\$(RM) \$(NAME)
+
+re: fclean all")
+
+echo "$input" > "$config_dir/Makefile"
+exit 0
